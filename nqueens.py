@@ -23,12 +23,13 @@ class Solver_8_queens:
         for i in range(0, self.desk_size):
             flag = False
             for j in range(0, self.desk_size):
-                if j != i:
-                    neighbour_queen = int(desk[j * 3:j * 3 + 3], 2)
-                    my_queen = int(desk[i * 3:i * 3 + 3], 2)
-                    if abs(j - i) == abs(neighbour_queen - my_queen) or neighbour_queen == my_queen:
-                        flag = True
-                        break
+                if j == i:
+                    continue
+                neighbour_queen = int(desk[j * 3:j * 3 + 3], 2)
+                my_queen = int(desk[i * 3:i * 3 + 3], 2)
+                if abs(j - i) == abs(neighbour_queen - my_queen) or neighbour_queen == my_queen:
+                    flag = True
+                    break
             if flag:
                 wrong_queens += 1
         return 1 - (wrong_queens / self.desk_size)
@@ -89,7 +90,7 @@ class Solver_8_queens:
                 index = temp_fitness.index(best_fit)
                 visualization = self.print_desk(population[index])
                 break
-            parents = self.selection(population)
+            parents = self.selection(population, temp_fitness)
             for _ in range(0, self.pop_size // 2):
                 first_parent = population[random.randint(0, self.pop_size - 1)]
                 second_parent = population[random.randint(0, self.pop_size - 1)]
