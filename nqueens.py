@@ -38,7 +38,7 @@ class Individ:
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=10, cross_prob=1, mut_prob=0.8, desk_size=8):
+    def __init__(self, pop_size=100, cross_prob=1, mut_prob=0.8, desk_size=8):
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
@@ -107,7 +107,7 @@ class Solver_8_queens:
                 individ = [individ for individ in population if individ.fitness == best_fit]
                 visualization = self.print_desk(individ[0].chromosome)
                 break
-            parents = self.selection(population)
+            parents = self.tournament_selection(population)
             new_population = []
             for _ in range(0, self.pop_size // 2):
                 temp = self.reproduce(population)
@@ -120,7 +120,7 @@ class Solver_8_queens:
         first_parent = population[random.randint(0, self.pop_size - 1)]
         second_parent = population[random.randint(0, self.pop_size - 1)]
         if random.random() < self.cross_prob:
-            next_generation = self.crossover(first_parent, second_parent)
+            next_generation = self.many_point_crossover(first_parent, second_parent)
             self.mutate_children(next_generation)
         else:
             next_genaration = (first_parent, second_parent)
@@ -130,3 +130,38 @@ class Solver_8_queens:
         for child in children:
             if random.random() < self.mut_prob:
                 self.mutation(child)
+
+    def many_point_crossover(self, first_parent, second_parent):
+        lotuses_quantity = random.randint(1, self.desk_size // 2)
+        lotuses = set()
+        for i in range(0, lotuses_quantity):
+            lotuses.add(random.randint(0, self.desk_size // 2))
+        lotuses = list(lotuses)
+        first_parent_chrom = first_parent.chromosome
+        second_parent_chrom = second_parent.chromosome
+        first_child_chrom = first_parent_chrom[:lotuses[0]]
+        second_child_chrom = second_parent_chrom[:lotuses[0]]
+        if lotuses_quantity > 1:
+            for i in range(0, len(lotuses) - 1):
+                first_child_chrom += second_parent_chrom[lotuses[i]:lotuses[i + 1]]
+                second_child_chrom += first_parent_chrom[lotuses[i]:lotuses[i + 1]]
+                temp = first_parent_chrom
+                first_parent_chrom = second_parent_chrom
+                second_parent_chrom = temp
+        first_child_chrom += second_parent_chrom[lotuses[len(lotuses) - 1]:]
+        second_child_chrom += first_parent_chrom[lotuses[len(lotuses) - 1]:]
+        first_child=Individ(first_child_chrom)
+        second_child=Individ(second_child_chrom)
+        return first_child, second_child
+
+    def tournament_selection(self, population, tour=2):
+        parent_population = []
+        for _ in range(0, self.pop_size):
+            participants = []
+            for i in range(0, tour):
+                participants.append(population[random.randint(0, self.pop_size - 1)])
+            if participants[0].fitness > participants[1].fitness:
+                parent_population.append(participants[0])
+            else:
+                parent_population.append(participants[1])
+        return parent_population
