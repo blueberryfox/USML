@@ -11,11 +11,11 @@ class Solver_8_queens:
     def generate_population(self):
         population = []
         for k in range(0, self.pop_size):
-            individual = []
+            desk = []
             for i in range(0, self.desk_size):
-                individual.append("{0:03b}".format(i))
-            random.shuffle(individual)
-            population.append("".join(individual))
+                desk.append("{0:03b}".format(i))
+            random.shuffle(desk)
+            population.append("".join(desk))
         return population
 
     def hits(self, desk):
@@ -24,19 +24,19 @@ class Solver_8_queens:
             flag = False
             for j in range(0, self.desk_size):
                 if j != i:
-                    a = int(desk[j*3:j*3+3],2)
-                    b = int(desk[i*3:i*3+3],2)
-                    if abs(j - i) == abs(a - b) or a == b:
+                    neighbour_queen = int(desk[j * 3:j * 3 + 3], 2)
+                    my_queen = int(desk[i * 3:i * 3 + 3], 2)
+                    if abs(j - i) == abs(neighbour_queen - my_queen) or neighbour_queen == my_queen:
                         flag = True
                         break
             if flag:
                 wrong_queens += 1
         return 1 - (wrong_queens / self.desk_size)
 
-    def selection(self, population):
+    def selection(self, population, individual_fitnesses):
         roulette_wheel = [0]
-        for individual in population:
-            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + self.hits(individual))
+        for i in range(0, self.pop_size):
+            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + individual_fitnesses[i])
         parent_population = []
         for i in range(0, self.pop_size):
             roll_probability = random.uniform(0, roulette_wheel[len(roulette_wheel) - 1])
@@ -60,17 +60,16 @@ class Solver_8_queens:
             temp[lotus] = '1'
         return "".join(temp)
 
-
     def print_desk(self, desk):
-            result = ''
-            for x in range(0, self.desk_size):
-                for y in range(0, self.desk_size):
-                    if y != int(desk[x*3:x*3+3],2):
-                        result += '+'
-                    else:
-                        result += 'Q'
-                result += '\n'
-            return result
+        result = ''
+        for x in range(0, self.desk_size):
+            for y in range(0, self.desk_size):
+                if y != int(desk[x * 3:x * 3 + 3], 2):
+                    result += '+'
+                else:
+                    result += 'Q'
+            result += '\n'
+        return result
 
     def solve(self, min_fitness=1, max_epochs=1000):
         if max_epochs is None: max_epochs = float('inf')
@@ -107,30 +106,3 @@ class Solver_8_queens:
                     new_generation.append(second_parent)
             population = new_generation
         return best_fit, epoch_num, visualization
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
