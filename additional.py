@@ -2,114 +2,135 @@ import random
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=4, cross_prob=0.75, mut_prob=0.5, desk_size=8):
+    def __init__(self, pop_size=300, cross_prob=1, mut_prob=0.8, desk_size=8):
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
         self.desk_size = desk_size
-        self.population = self.generate_desk()
 
-    @staticmethod
-    def print_desk(desk):
-        result = ''
-        for x in range(0, len(desk)):
-            for y in range(0, len(desk)):
-                if y != int(desk[x], 2):
-                    result += '+'
-                else:
-                    result += 'Q'
-            result += '\n'
-        return result
-
-    def generate_desk(self):
+    def generate_population(self):
         population = []
         for k in range(0, self.pop_size):
             individual = []
             for i in range(0, self.desk_size):
                 individual.append("{0:03b}".format(i))
             random.shuffle(individual)
-            population.append(individual)
+            population.append("".join(individual))
         return population
 
-    def solve(self, min_fitness=1, max_epochs=10):
-        best_fit = 0
-        epoch_num = 0
-        while best_fit < min_fitness and epoch_num < max_epochs:
-            temp_fitness = []
-            for chromosome in self.population:
-                temp_fitness.append(self.hits(chromosome))
-                if best_fit < self.hits(chromosome):
-                    best_fit = self.hits(chromosome)
-            parents = self.tournir_selection()
-            next_generation = []
-            for i in range(0, len(parents) - 2):
-                temp_cross = random.random()
-                if temp_cross <= self.cross_prob:
-                    children = list(self.many_point_crossover(parents[i], parents[i + 1]))
-                    for child in children:
-                        for gen in child:
-                            temp_mut = random.random()
-                            if temp_mut < self.mut_prob:
-                                gen = self.mutation(gen)
-                    for child in children:
-                        next_generation.append(child)
-            epoch_num += 1
-        visualization = self.print_desk(self.population[temp_fitness.index(best_fit)])
-        return best_fit, epoch_num, visualization
-
-    def hits(self, chromosome):
+    def hits(self, desk):
         wrong_queens = 0
         for i in range(0, self.desk_size):
             flag = False
             for j in range(0, self.desk_size):
                 if j != i:
-                    if abs(j - i) == abs(int(chromosome[j], 2) - int(chromosome[i], 2)) or chromosome[j] == chromosome[
-                        i]:
+                    a = int(desk[j*3:j*3+3],2)
+                    b = int(desk[i*3:i*3+3],2)
+                    if abs(j - i) == abs(a - b) or a == b:
                         flag = True
                         break
             if flag:
                 wrong_queens += 1
         return 1 - (wrong_queens / self.desk_size)
 
-    def tournir_selection(self):
-        temp_population = []
+    def selection(self, population):
+        roulette_wheel = [0]
+        for individual in population:
+            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + self.hits(individual))
         parent_population = []
-        for i in range(0, self.pop_size, 2):
-            tour = [self.population[i], self.population[i + 1]]
-            temp_population.append(tour)
-        for tour in temp_population:
-            best_fit = 0
-            best_chromosome = []
-            for chromosome in tour:
-                if best_fit < self.hits(chromosome):
-                    best_fit = self.hits(chromosome)
-                    best_chromosome = chromosome
-            parent_population.append(best_chromosome)
+        for i in range(0, self.pop_size):
+            roll_probability = random.uniform(0, roulette_wheel[len(roulette_wheel) - 1])
+            for j in range(0, len(roulette_wheel) - 1):
+                if roulette_wheel[j] <= roll_probability < roulette_wheel[j + 1]:
+                    parent_population.append(population[j])
         return parent_population
 
-    def many_point_crossover(self, first_parent, second_parent):
-        lotuses_quantity = random.randint(1, self.desk_size / 2)
-        lotuses = set()
-        for i in range(0, lotuses_quantity):
-            lotuses.add(random.randint(0, self.desk_size / 2))
-        lotuses = list(lotuses)
-        first_child = first_parent[:lotuses[0]]
-        second_child = second_parent[:lotuses[0]]
-        if lotuses_quantity > 1:
-            for i in range(0, len(lotuses) - 1):
-                first_child += second_parent[lotuses[i]:lotuses[i + 1]]
-                second_child += first_parent[lotuses[i]:lotuses[i + 1]]
-                temp = first_parent
-                first_parent = second_parent
-                second_parent = temp
-        first_child += second_parent[lotuses[len(lotuses) - 1]:]
-        second_child += first_child[lotuses[len(lotuses) - 1]:]
+    def crossover(self, first_parent, second_parent):
+        lotus = random.randint(0, len(first_parent) - 1)
+        first_child = first_parent[:lotus] + second_parent[lotus:]
+        second_child = second_parent[:lotus] + first_parent[lotus:]
         return first_child, second_child
 
-    def mutation(self, gen):
-        lotus = random.randint(0, len(gen) - 1)
-        if gen[lotus] == '1':
-            gen = gen.replace(gen[lotus], '0')
+    def mutation(self, chromosome):
+        lotus = random.randint(0, len(chromosome) - 1)
+        temp = list(chromosome)
+        if temp[lotus] == '1':
+            temp[lotus] = '0'
         else:
-            gen = gen.replace(gen[lotus], '1')
-        return gen
+            temp[lotus] = '1'
+        return "".join(temp)
+
+
+    def print_desk(self, desk):
+            result = ''
+            for x in range(0, self.desk_size):
+                for y in range(0, self.desk_size):
+                    if y != int(desk[x*3:x*3+3],2):
+                        result += '+'
+                    else:
+                        result += 'Q'
+                result += '\n'
+            return result
+
+    def solve(self, min_fitness=1, max_epochs=1000):
+        if max_epochs is None: max_epochs = float('inf')
+        if min_fitness is None: min_fitness = float('inf')
+        best_fit = 0
+        epoch_num = 0
+        visualization = ""
+        population = self.generate_population()
+        while True:
+            epoch_num += 1
+            temp_fitness = []
+            new_generation = []
+            for individual in population:
+                temp_fitness.append(self.hits(individual))
+            best_fit = max(temp_fitness)
+            if best_fit >= min_fitness or epoch_num == max_epochs:
+                index = temp_fitness.index(best_fit)
+                visualization = self.print_desk(population[index])
+                break
+            parents = self.selection(population)
+            for _ in range(0, self.pop_size // 2):
+                first_parent = population[random.randint(0, self.pop_size - 1)]
+                second_parent = population[random.randint(0, self.pop_size - 1)]
+                t = random.random()
+                if t < self.cross_prob:
+                    children = self.crossover(first_parent, second_parent)
+                    for i in children:
+                        if random.random() < self.mut_prob:
+                            new_generation.append(self.mutation(i))
+                        else:
+                            new_generation.append(i)
+                else:
+                    new_generation.append(first_parent)
+                    new_generation.append(second_parent)
+            population = new_generation
+        return best_fit, epoch_num, visualization
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
