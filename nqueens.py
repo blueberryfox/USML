@@ -19,25 +19,26 @@ class Solver_8_queens:
         return population
 
     def hits(self, desk):
-        wrong_queens = 0
+        wrong_queens_num = 0
         for i in range(0, self.desk_size):
-            flag = False
+            is_wrong_queen = False
             for j in range(0, self.desk_size):
                 if j == i:
                     continue
                 neighbour_queen = int(desk[j * 3:j * 3 + 3], 2)
                 my_queen = int(desk[i * 3:i * 3 + 3], 2)
                 if abs(j - i) == abs(neighbour_queen - my_queen) or neighbour_queen == my_queen:
-                    flag = True
+                    is_wrong_queen = True
                     break
-            if flag:
-                wrong_queens += 1
-        return 1 - (wrong_queens / self.desk_size)
+            if is_wrong_queen:
+                wrong_queens_num += 1
+        return 1 - (wrong_queens_num / self.desk_size)
 
-    def selection(self, population, individual_fitnesses):
+    def selection(self, population, population_fitnesses):
         roulette_wheel = [0]
         for i in range(0, self.pop_size):
-            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + individual_fitnesses[i])
+            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + population_fitnesses[i])
+
         parent_population = []
         for i in range(0, self.pop_size):
             roll_probability = random.uniform(0, roulette_wheel[len(roulette_wheel) - 1])
@@ -72,38 +73,46 @@ class Solver_8_queens:
             result += '\n'
         return result
 
-    def solve(self, min_fitness=1, max_epochs=1000):
-        if max_epochs is None: max_epochs = float('inf')
-        if min_fitness is None: min_fitness = float('inf')
+    def solve(self, min_fitness=1, max_epochs=8000):
+        if min_fitness is None: min_fitness = 0
+        if max_epochs is None: max_epochs = 1
         best_fit = 0
         epoch_num = 0
-        visualization = ""
+        visualization = None
         population = self.generate_population()
         while True:
             epoch_num += 1
-            temp_fitness = []
-            new_generation = []
+            population_fitnesses = []
             for individual in population:
-                temp_fitness.append(self.hits(individual))
-            best_fit = max(temp_fitness)
+                population_fitnesses.append(self.hits(individual))
+            best_fit = max(population_fitnesses)
             if best_fit >= min_fitness or epoch_num == max_epochs:
-                index = temp_fitness.index(best_fit)
+                index = population_fitnesses.index(best_fit)
                 visualization = self.print_desk(population[index])
                 break
-            parents = self.selection(population, temp_fitness)
+            parents = self.selection(population, population_fitnesses)
+            new_population = []
             for _ in range(0, self.pop_size // 2):
-                first_parent = population[random.randint(0, self.pop_size - 1)]
-                second_parent = population[random.randint(0, self.pop_size - 1)]
-                t = random.random()
-                if t < self.cross_prob:
-                    children = self.crossover(first_parent, second_parent)
-                    for i in children:
-                        if random.random() < self.mut_prob:
-                            new_generation.append(self.mutation(i))
-                        else:
-                            new_generation.append(i)
-                else:
-                    new_generation.append(first_parent)
-                    new_generation.append(second_parent)
-            population = new_generation
+                temp = self.reproduce(population)
+                for i in temp:
+                    new_population.append(i)
+            population = new_population
         return best_fit, epoch_num, visualization
+
+    def reproduce(self, population):
+        first_parent = population[random.randint(0, self.pop_size - 1)]
+        second_parent = population[random.randint(0, self.pop_size - 1)]
+        if random.random() < self.cross_prob:
+            next_generation = self.mutate_children(self.crossover(first_parent, second_parent))
+        else:
+            next_genaration = (first_parent, second_parent)
+        return next_generation
+
+    def mutate_children(self, children):
+        mutants = []
+        for child in children:
+            if random.random() < self.mut_prob:
+                mutants.append(self.mutation(child))
+            else:
+                mutants.append(child)
+        return mutants
