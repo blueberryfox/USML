@@ -58,26 +58,6 @@ class Solver_8_queens:
             population.append(individual)
         return population
 
-    def selection(self, population):
-        roulette_wheel = [0]
-        for individual in population:
-            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + individual.fitness)
-        parent_population = []
-        for i in range(0, self.pop_size):
-            roll_probability = random.uniform(0, roulette_wheel[len(roulette_wheel) - 1])
-            for j in range(0, len(roulette_wheel) - 1):
-                if roulette_wheel[j] <= roll_probability < roulette_wheel[j + 1]:
-                    parent_population.append(population[j])
-        return parent_population
-
-    def crossover(self, first_parent, second_parent):
-        lotus = random.randint(0, len(first_parent.chromosome) - 1)
-        first_child_chromosome = first_parent.chromosome[:lotus] + second_parent.chromosome[lotus:]
-        second_child_chromosome = second_parent.chromosome[:lotus] + first_parent.chromosome[lotus:]
-        first_child = Individual(first_child_chromosome)
-        second_child = Individual(second_child_chromosome)
-        return first_child, second_child
-
     def mutation(self, child):
         lotus = random.randint(0, len(child.chromosome) - 1)
         temp = list(child.chromosome)
@@ -88,10 +68,10 @@ class Solver_8_queens:
         return "".join(temp)
 
     def many_point_crossover(self, first_parent, second_parent):
-        lotuses_quantity = random.randint(1, first_parent.desk_size // 2)
+        lotuses_quantity = random.randint(1, len(first_parent.chromosome) - 1)
         lotuses = set()
-        for i in range(0, lotuses_quantity):
-            lotuses.add(random.randint(0, first_parent.desk_size // 2))
+        while len(lotuses) < lotuses_quantity:
+            lotuses.add(random.randint(0, len(first_parent.chromosome) - 1))
         lotuses = list(lotuses)
         first_parent_chrom = first_parent.chromosome
         second_parent_chrom = second_parent.chromosome
@@ -106,9 +86,7 @@ class Solver_8_queens:
                 second_parent_chrom = temp
         first_child_chrom += second_parent_chrom[lotuses[len(lotuses) - 1]:]
         second_child_chrom += first_parent_chrom[lotuses[len(lotuses) - 1]:]
-        first_child = Individual(first_child_chrom)
-        second_child = Individual(second_child_chrom)
-        return first_child, second_child
+        return Individual(first_child_chrom), Individual(second_child_chrom)
 
     def tournament_selection(self, population, tour=2):
         parent_population = []
@@ -126,7 +104,7 @@ class Solver_8_queens:
         first_parent = population[random.randint(0, self.pop_size - 1)]
         second_parent = population[random.randint(0, self.pop_size - 1)]
         if random.random() < self.cross_prob:
-            next_generation = self.crossover(first_parent, second_parent)
+            next_generation = self.many_point_crossover(first_parent, second_parent)
             self.mutate_children(next_generation)
         else:
             next_genaration = (first_parent, second_parent)
@@ -152,7 +130,7 @@ class Solver_8_queens:
                 individual = [individual for individual in population if individual.fitness == best_fit]
                 visualization = individual[0].visualize_solution()
                 break
-            parents = self.selection(population)
+            parents = self.tournament_selection(population)
             new_population = []
             for _ in range(0, self.pop_size // 2):
                 temp = self.reproduce(population)
