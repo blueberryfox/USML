@@ -7,7 +7,7 @@ a genetic algorithm
 import sys
 print('Python version:', sys.version)
 
-import additional as nq
+import nqueens as nq
 
 solver=nq.Solver_8_queens()
 best_fit, epoch_num, visualization = solver.solve()
