@@ -118,7 +118,7 @@ class Solver_8_queens:
             parents = self.selection(parents)
             new_population = []
             for _ in range(0, self.pop_size // 2):
-                temp = self.reproduce(population)
+                temp = self.reproduce(parents)
                 for i in temp:
                     new_population.append(i)
             population = new_population
