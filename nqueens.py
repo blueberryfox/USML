@@ -46,7 +46,7 @@ class Individual:
 
 
 class Solver_8_queens:
-    def __init__(self, pop_size=100, cross_prob=1, mut_prob=0.4):
+    def __init__(self, pop_size=300, cross_prob=1, mut_prob=0.4):
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
@@ -74,9 +74,7 @@ class Solver_8_queens:
         lotus = random.randint(0, len(first_parent.chromosome) - 1)
         first_child_chromosome = first_parent.chromosome[:lotus] + second_parent.chromosome[lotus:]
         second_child_chromosome = second_parent.chromosome[:lotus] + first_parent.chromosome[lotus:]
-        first_child = Individual(first_child_chromosome)
-        second_child = Individual(second_child_chromosome)
-        return first_child, second_child
+        return Individual(first_child_chromosome), Individual(second_child_chromosome)
 
     def mutation(self, child):
         lotus = random.randint(0, len(child.chromosome) - 1)
@@ -85,8 +83,7 @@ class Solver_8_queens:
             temp[lotus] = '0'
         else:
             temp[lotus] = '1'
-        child.chromosome = "".join(temp)
-        child.update_fitness()
+        return "".join(temp)
 
     def reproduce(self, population):
         first_parent = population[random.randint(0, self.pop_size - 1)]
@@ -101,9 +98,10 @@ class Solver_8_queens:
     def mutate_children(self, children):
         for child in children:
             if random.random() < self.mut_prob:
-                self.mutation(child)
+                child.chromosome = self.mutation(child)
+                child.update_fitness()
 
-    def solve(self, min_fitness=1, max_epochs=3000):
+    def solve(self, min_fitness=1, max_epochs=7000):
         if min_fitness is None: min_fitness = 0
         if max_epochs is None: max_epochs = 1
         best_fit = 0
