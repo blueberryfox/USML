@@ -115,7 +115,7 @@ class Solver_8_queens:
                 individual = [individual for individual in population if individual.fitness == best_fit]
                 visualization = individual[0].visualize_solution()
                 break
-            parents = self.selection(parents)
+            parents = self.selection(population)
             new_population = []
             for _ in range(0, self.pop_size // 2):
                 temp = self.reproduce(parents)
