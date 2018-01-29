@@ -1,13 +1,10 @@
 import random
 
 
-class Individ:
-    def __init__(self, desk_size=8, chromosome=None):
-        self.desk_size = 8
-        if chromosome is not None:
-            self.chromosome = chromosome
-        else:
-            self.chromosome = self.__generate_chromosome()
+class Individual:
+    def __init__(self, chromosome=None, desk_size=8):
+        self.desk_size = desk_size
+        self.chromosome = chromosome if chromosome is not None else self.__generate_chromosome()
         self.fitness = self.__hits()
 
     def __generate_chromosome(self):
@@ -36,26 +33,35 @@ class Individ:
     def update_fitness(self):
         self.fitness = self.__hits()
 
+    def visualize_solution(self):
+        result = ''
+        for x in range(0, self.desk_size):
+            for y in range(0, self.desk_size):
+                if y != int(self.chromosome[x * 3:x * 3 + 3], 2):
+                    result += '+'
+                else:
+                    result += 'Q'
+            result += '\n'
+        return result
+
 
 class Solver_8_queens:
-    def __init__(self, pop_size=10, cross_prob=1, mut_prob=0.8, desk_size=8):
+    def __init__(self, pop_size=100, cross_prob=1, mut_prob=0.4):
         self.pop_size = pop_size
         self.cross_prob = cross_prob
         self.mut_prob = mut_prob
-        self.desk_size = desk_size
 
     def generate_population(self):
         population = []
         for _ in range(0, self.pop_size):
-            individ = Individ()
-            population.append(individ)
+            individual = Individual()
+            population.append(individual)
         return population
 
     def selection(self, population):
         roulette_wheel = [0]
-        for individ in population:
-            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + individ.fitness)
-
+        for individual in population:
+            roulette_wheel.append(roulette_wheel[len(roulette_wheel) - 1] + individual.fitness)
         parent_population = []
         for i in range(0, self.pop_size):
             roll_probability = random.uniform(0, roulette_wheel[len(roulette_wheel) - 1])
@@ -68,8 +74,8 @@ class Solver_8_queens:
         lotus = random.randint(0, len(first_parent.chromosome) - 1)
         first_child_chromosome = first_parent.chromosome[:lotus] + second_parent.chromosome[lotus:]
         second_child_chromosome = second_parent.chromosome[:lotus] + first_parent.chromosome[lotus:]
-        first_child = Individ(first_child_chromosome)
-        second_child = Individ(second_child_chromosome)
+        first_child = Individual(first_child_chromosome)
+        second_child = Individual(second_child_chromosome)
         return first_child, second_child
 
     def mutation(self, child):
@@ -81,40 +87,6 @@ class Solver_8_queens:
             temp[lotus] = '1'
         child.chromosome = "".join(temp)
         child.update_fitness()
-
-    def print_desk(self, desk):
-        result = ''
-        for x in range(0, self.desk_size):
-            for y in range(0, self.desk_size):
-                if y != int(desk[x * 3:x * 3 + 3], 2):
-                    result += '+'
-                else:
-                    result += 'Q'
-            result += '\n'
-        return result
-
-    def solve(self, min_fitness=1, max_epochs=3000):
-        if min_fitness is None: min_fitness = 0
-        if max_epochs is None: max_epochs = 1
-        best_fit = 0
-        epoch_num = 0
-        visualization = None
-        population = self.generate_population()
-        while True:
-            epoch_num += 1
-            best_fit = max(individ.fitness for individ in population)
-            if best_fit >= min_fitness or epoch_num == max_epochs:
-                individ = [individ for individ in population if individ.fitness == best_fit]
-                visualization = self.print_desk(individ[0].chromosome)
-                break
-            parents = self.selection(population)
-            new_population = []
-            for _ in range(0, self.pop_size // 2):
-                temp = self.reproduce(population)
-                for i in temp:
-                    new_population.append(i)
-            population = new_population
-        return best_fit, epoch_num, visualization
 
     def reproduce(self, population):
         first_parent = population[random.randint(0, self.pop_size - 1)]
@@ -130,3 +102,26 @@ class Solver_8_queens:
         for child in children:
             if random.random() < self.mut_prob:
                 self.mutation(child)
+
+    def solve(self, min_fitness=1, max_epochs=3000):
+        if min_fitness is None: min_fitness = 0
+        if max_epochs is None: max_epochs = 1
+        best_fit = 0
+        epoch_num = 0
+        visualization = None
+        population = self.generate_population()
+        while True:
+            epoch_num += 1
+            best_fit = max(individual.fitness for individual in population)
+            if best_fit >= min_fitness or epoch_num == max_epochs:
+                individual = [individual for individual in population if individual.fitness == best_fit]
+                visualization = individual[0].visualize_solution()
+                break
+            parents = self.selection(population)
+            new_population = []
+            for _ in range(0, self.pop_size // 2):
+                temp = self.reproduce(population)
+                for i in temp:
+                    new_population.append(i)
+            population = new_population
+        return best_fit, epoch_num, visualization
